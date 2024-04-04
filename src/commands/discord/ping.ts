@@ -6,9 +6,11 @@ export default {
 		meta: new SlashCommandBuilder()
 			.setName("ping")
 			.setDescription("Check the bot's ping"),
+		category: "stats",
+		accountRequired: false,
 		permissionRequired: null,
 	},
-	async execute(client, interaction) {
+	async execute(client, interaction, otherData) {
 		const reply = await interaction.reply({
 			embeds: [
 				new EmbedBuilder()

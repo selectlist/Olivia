@@ -14,9 +14,11 @@ export default {
 					.setDescription("Should we include bots from Revolt Chat?")
 					.setRequired(false)
 			),
+		category: "general",
+		accountRequired: false,
 		permissionRequired: null,
 	},
-	async execute(client, interaction) {
+	async execute(client, interaction, otherData) {
 		const revoltOption = interaction.options.getBoolean("revolt");
 
 		const discord = await database.Discord.find({

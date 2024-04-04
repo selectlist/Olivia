@@ -11,9 +11,11 @@ export default {
 		meta: new SlashCommandBuilder()
 			.setName("eval")
 			.setDescription("Evaluate your Code (developers only)"),
+		category: "staff",
+		accountRequired: false,
 		permissionRequired: "developers.evaluate",
 	},
-	async execute(client, interaction) {
+	async execute(client, interaction, otherData) {
 		const modal = new ModalBuilder()
 			.setCustomId("eval-private")
 			.setTitle("Evaluate your Code");
