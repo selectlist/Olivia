@@ -1,0 +1,7 @@
+.idea/
+nirn-proxy.*
+nirn-proxy
+.env
+*.txt
+*.log
+k6_tests/node_modules

@@ -1,0 +1,32 @@
+{
+	"name": "olivia",
+	"version": "4.0.0",
+	"author": "selectdev",
+	"license": "MIT",
+	"scripts": {
+		"start": "node ./dist/index",
+		"deploy": "node ./dist/deploy",
+		"tsc": "tsc",
+		"format": "prettier --write .",
+		"test": "jest",
+        
+        "database:generate": "npx prisma generate --schema=./src/Serendipy/schema.prisma",
+		"database:push": "npx prisma db push --schema=./src/Serendipy/schema.prisma",
+		"database:typegen": "npx @kalissaac/prisma-typegen ./src/Serendipity/types/prismaTypes.ts ./src/Serendipity/schema.prisma"
+	},
+	"type": "module",
+	"dependencies": {
+		"@prisma/client": "^5.9.1",
+		"colors": "^1.4.0",
+		"discord.js": "^14.14.1",
+		"dotenv": "^16.3.1",
+		"fs": "^0.0.1-security",
+		"prettier": "^3.2.4",
+		"redis": "^4.6.12",
+		"revolt.js": "^7.0.0-beta.10"
+	},
+	"devDependencies": {
+		"@types/node": "^20.11.5",
+		"prisma": "^5.9.1"
+	}
+}

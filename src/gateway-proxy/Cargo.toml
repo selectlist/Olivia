@@ -1,0 +1,83 @@
+[package]
+name = "gateway-proxy"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+base64 = "0.21"
+bytes = "1"
+flate2 = { version = "1.0", default-features = false }
+futures-util = { version = "0.3", default-features = false, features = [
+    "sink",
+] }
+halfbrown = { version = "0.2", features = ["serde"] }
+http-body-util = "0.1"
+hyper = { version = "1", default-features = false, features = [
+    "server",
+    "http1",
+    "http2",
+] }
+hyper-util = { version = "0.1", default-features = false, features = [
+    "server-auto",
+    "http1",
+    "http2",
+] }
+inotify = { version = "0.10", default-features = false, features = ["stream"] }
+itoa = "1.0"
+metrics = { version = "0.22", default-features = false }
+metrics-exporter-prometheus = { version = "0.13", default-features = false }
+mimalloc = { version = "0.1", default-features = false, features = [
+    "override",
+] }
+rand = "0.8"
+ring = { version = "0.17", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", default-features = false, features = [
+    "std",
+], optional = true }
+simd-json = { version = "0.13", default-features = false, features = [
+    "serde_impl",
+], optional = true }
+tokio = { version = "1", default-features = false, features = [
+    "rt-multi-thread",
+    "signal",
+] }
+tokio-websockets = { version = "0.5", default-features = false, features = [
+    "server",
+] }
+tracing = { version = "0.1", default-features = false, features = ["log"] }
+tracing-subscriber = { version = "0.3", default-features = false, features = [
+    "fmt",
+    "std",
+] }
+twilight-cache-inmemory = { git = "https://github.com/anti-raid/twilight-for-gateway-proxy.git", branch = "15-custom", default-features = false }
+twilight-gateway = { git = "https://github.com/anti-raid/twilight-for-gateway-proxy.git", branch = "15-custom", default-features = false, features = [
+    "rustls-webpki-roots",
+] }
+twilight-gateway-queue = { git = "https://github.com/anti-raid/twilight-for-gateway-proxy.git", branch = "15-custom", default-features = false, features = [
+] }
+twilight-http = { git = "https://github.com/anti-raid/twilight-for-gateway-proxy.git", branch = "15-custom", default-features = false, features = [
+    "rustls-webpki-roots",
+] }
+twilight-model = { git = "https://github.com/anti-raid/twilight-for-gateway-proxy.git", branch = "15-custom" }
+
+[features]
+default = ["simd"]
+simd = [
+    "flate2/zlib-ng",
+    "simd-json",
+    "twilight-gateway/zlib-simd",
+    "twilight-gateway/simd-json",
+    "twilight-http/simd-json",
+]
+no-simd = ["flate2/zlib", "serde_json", "twilight-gateway/zlib-stock"]
+
+[profile.release]
+codegen-units = 1
+debug = false
+incremental = false
+lto = true
+opt-level = 3
+panic = "abort"
+debug-assertions = false
