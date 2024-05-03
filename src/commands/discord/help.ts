@@ -1,5 +1,7 @@
 import { ActionRowBuilder, SlashCommandBuilder } from "@discordjs/builders";
 import {
+	ChatInputCommandInteraction,
+	Client,
 	ComponentType,
 	EmbedBuilder,
 	StringSelectMenuBuilder,
@@ -15,7 +17,11 @@ export default {
 		accountRequired: false,
 		permissionRequired: null,
 	},
-	async execute(client, interaction, otherData) {
+	async execute(
+		client: Client,
+		interaction: ChatInputCommandInteraction,
+		otherData: any
+	) {
 		const cap = (string: string) =>
 			string.charAt(0).toUpperCase() + string.slice(1); // Capitalize first letter
 
@@ -109,11 +115,12 @@ export default {
 			],
 		});
 
-		const collector = resp.createMessageComponentCollector({
+		const collector = await resp.createMessageComponentCollector({
 			componentType: ComponentType.StringSelect,
 			time: 3_600_000,
 		});
 
+		// @ts-expect-error
 		collector.on("collect", async (i) => {
 			const selection = i.values[0];
 			const category = categories.find((p) => p.name === selection);

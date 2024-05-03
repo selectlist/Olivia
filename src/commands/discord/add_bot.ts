@@ -9,6 +9,8 @@ import {
 	TextInputBuilder,
 	APIActionRowComponent,
 	ModalSubmitFields,
+	Client,
+	ChatInputCommandInteraction,
 } from "discord.js";
 
 export default {
@@ -20,7 +22,11 @@ export default {
 		accountRequired: true,
 		permissionRequired: null,
 	},
-	async execute(client, interaction, otherData) {
+	async execute(
+		client: Client,
+		interaction: ChatInputCommandInteraction,
+		otherData: any
+	) {
 		const embed = new EmbedBuilder()
 			.setTitle("Add Bot")
 			.setColor("Blue")
@@ -44,6 +50,7 @@ export default {
 
 		const resp = await interaction.reply({
 			embeds: [embed],
+			// @ts-expect-error
 			components: [row],
 			ephemeral: true,
 		});
@@ -124,32 +131,39 @@ export default {
 
 				i.awaitModalSubmit({
 					time: 120000,
-					modalFilter: (int) => interaction.customId === "addbot",
+					// @ts-expect-error
+					modalFilter: () => interaction.customId === "addbot",
 				})
 					.then(async (e) => {
-						const modalFields: ModalSubmitFields =
-							interaction.fields.fields;
+						let data: {} = {};
+						const modalFields: ModalSubmitFields = e.fields;
+						modalFields.fields.map(
+							(p) => (data[p.customId] = p.value)
+						);
 
 						try {
-                            // cum
+							// cum
+							// am slowly dying inside
+							// please end my suffering
+							// nightmare, nightmare, nightmare
 						} catch (err) {
-							await e.reply({
+							await i.channel.send({
 								embeds: [
 									new EmbedBuilder()
 										.setTitle("Error")
 										.setColor("Red")
 										.setDescription(err.toString()),
 								],
+								components: [],
 							});
 						}
 					})
-					.catch((err) =>
+					.catch(() =>
 						resp.edit({
 							content:
-								"This interaction has been cancelled. Please reexecute the command to complete this action.",
+								"This interaction has been cancelled due to a error. Please reexecute the command to complete this action.",
 							embeds: [],
 							components: [],
-							ephemeral: true,
 						})
 					);
 			} else if (i.customId === "cancel") {
@@ -158,7 +172,6 @@ export default {
 						"This interaction has been cancelled. Please reexecute the command to complete this action.",
 					embeds: [],
 					components: [],
-					ephemeral: true,
 				});
 			}
 		});
@@ -170,7 +183,6 @@ export default {
 						"This interaction has expired. Please reexecute the command to complete this action.",
 					embeds: [],
 					components: [],
-					ephemeral: true,
 				});
 			}
 		});

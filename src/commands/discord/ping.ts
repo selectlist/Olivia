@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { EmbedBuilder } from "discord.js";
+import { ChatInputCommandInteraction, Client, EmbedBuilder } from "discord.js";
 
 export default {
 	data: {
@@ -10,7 +10,11 @@ export default {
 		accountRequired: false,
 		permissionRequired: null,
 	},
-	async execute(client, interaction, otherData) {
+	async execute(
+		client: Client,
+		interaction: ChatInputCommandInteraction,
+		otherData: any
+	) {
 		const reply = await interaction.reply({
 			embeds: [
 				new EmbedBuilder()

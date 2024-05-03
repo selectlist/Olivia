@@ -1,4 +1,5 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
+import { ChatInputCommandInteraction, Client } from "discord.js";
 
 export default {
 	data: {
@@ -9,7 +10,11 @@ export default {
 		accountRequired: false,
 		permissionRequired: null,
 	},
-	async execute(client, interaction, otherData) {
+	async execute(
+		client: Client,
+		interaction: ChatInputCommandInteraction,
+		otherData: any
+	) {
 		const formatTime = (seconds) => {
 			const days = Math.floor(seconds / 86400);
 			seconds -= days * 86400;
