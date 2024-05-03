@@ -34,7 +34,7 @@ export default {
 				.setDescription(p.description)
 				.setThumbnail(
 					p.avatar === "/logo.png"
-						? "https://sparkyflight.xyz/logo.png"
+						? "https://select-list.xyz/logo.png"
 						: p.avatar
 				)
 				.setColor("Random")

@@ -17,7 +17,7 @@ export default {
 		}[],
 		extraData: any
 	) {
-        const formatTime = (seconds) => {
+		const formatTime = (seconds) => {
 			const days = Math.floor(seconds / 86400);
 			seconds -= days * 86400;
 

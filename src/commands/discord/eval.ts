@@ -12,7 +12,7 @@ export default {
 			.setName("eval")
 			.setDescription("Evaluate your Code (developers only)"),
 		category: "staff",
-		accountRequired: false,
+		accountRequired: true,
 		permissionRequired: "developers.evaluate",
 	},
 	async execute(client, interaction, otherData) {
