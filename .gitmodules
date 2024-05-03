@@ -1,4 +1,3 @@
-
 [submodule "src/gateway-proxy"]
 	path = src/gateway-proxy
 	url = https://github.com/Purrquinox/gateway-proxy
@@ -8,3 +7,6 @@
 [submodule "src/Serendipity"]
 	path = src/Serendipity
 	url = https://github.com/selectlist/Serendipity
+        branch = development
+[submodule "Serendipity"]
+	branch = development
