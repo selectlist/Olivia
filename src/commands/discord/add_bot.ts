@@ -11,7 +11,23 @@ import {
 	ModalSubmitFields,
 	Client,
 	ChatInputCommandInteraction,
+	WebhookClient,
 } from "discord.js";
+import { REST } from "@discordjs/rest";
+import { Routes } from "discord-api-types/v9";
+import type { RESTGetAPIUserResult } from "discord-api-types/v9";
+import * as database from "../../Serendipity/prisma.js";
+
+// Initalize REST
+const rest = new REST({
+	version: "9",
+}).setToken(process.env.DISCORD_TOKEN as string);
+
+// Initalize Webhook Client
+const webhookClient = new WebhookClient({
+	id: process.env.DISCORD_LOG_CHANNEL,
+	token: process.env.DISCORD_LOG_CHANNEL_TOKEN,
+});
 
 export default {
 	data: {
@@ -111,7 +127,9 @@ export default {
 						return new ActionRowBuilder()
 							.addComponents(
 								new TextInputBuilder()
-									.setCustomId(p.name)
+									.setCustomId(
+										p.name.toLowerCase().replace(" ", "_")
+									)
 									.setLabel(p.name)
 									.setPlaceholder(p.description)
 									.setStyle(
@@ -142,10 +160,131 @@ export default {
 						);
 
 						try {
-							// cum
-							// am slowly dying inside
-							// please end my suffering
-							// nightmare, nightmare, nightmare
+							const apiUserData = (await rest.get(
+								Routes.user(data["client_id"])
+							)) as RESTGetAPIUserResult;
+
+							if (!apiUserData)
+								return i.channel.send({
+									embeds: [
+										new EmbedBuilder()
+											.setTitle("Error")
+											.setColor("Red")
+											.setDescription(
+												"Sorry, that client does not exist!"
+											),
+									],
+									components: [],
+								});
+							else if (apiUserData.bot) {
+								const checkData = await database.Discord.get({
+									botid: data["client_id"],
+								});
+
+								if (checkData)
+									return i.channel.send({
+										embeds: [
+											new EmbedBuilder()
+												.setTitle("Error")
+												.setColor("Red")
+												.setDescription(
+													"Sorry, that bot already exists in the database."
+												),
+										],
+										components: [],
+									});
+
+								const userData = await database.Users.get({
+									userid: interaction.user.id,
+								});
+
+								if (!userData)
+									await database.Users.create({
+										username: interaction.user.username,
+										userid: interaction.user.id,
+										revoltid: null,
+										bio: "None",
+										avatar: interaction.user.displayAvatarURL(),
+										banner: "/banner.png",
+										badges: [],
+										staff_perms: [],
+									});
+
+								const resp = await database.Discord.create({
+									botid: data["client_id"],
+									name: apiUserData.username,
+									avatar: `https://cdn.discordapp.com/avatars/${data["client_id"]}/${apiUserData.avatar}.png`,
+									banner: "/banner.png",
+									tags: data["tags"]
+										.split(", ")
+										.map((p) => p),
+									invite: data["invite"],
+									description: data["short_description"],
+									longdescription: data["long_description"],
+									servers: 0,
+									shards: 0,
+									users: 0,
+									claimedBy: null,
+									state: "PENDING",
+									upvotes: [],
+									downvotes: [],
+									ownerid: interaction.user.id,
+									additional_owners: [],
+								})
+									.then(() => {
+										return true;
+									})
+									.catch(() => {
+										return false;
+									});
+
+								if (resp) {
+									webhookClient.send({
+										content: "@everyone",
+										embeds: [
+											new EmbedBuilder()
+												.setTitle("New Bot")
+												.setDescription(
+													`<@${interaction.user.id}> has just added a new bot to Select List!`
+												)
+												.setTimestamp()
+												.setColor("Green")
+												.setThumbnail(
+													`https://cdn.discordapp.com/avatars/${data["client_id"]}/${apiUserData.avatar}.png`
+												)
+												.addFields(
+													{
+														name: "Bot",
+														value: `${apiUserData.username} [${data["client_id"]}]`,
+														inline: true,
+													},
+													{
+														name: "Platform",
+														value: "Discord",
+														inline: true,
+													}
+												)
+												.setFooter({
+													text: `Thank you for using Select List!`,
+													iconURL:
+														"https://select-list.xyz/logo.png",
+												}),
+										],
+									});
+
+									return i.channel.send({
+										embeds: [
+											new EmbedBuilder()
+												.setTitle("Success!")
+												.setColor("Green")
+												.setDescription(
+													"Your bot has been added into the queue!"
+												),
+										],
+										components: [],
+									});
+								}
+							}
 						} catch (err) {
 							await i.channel.send({
 								embeds: [
