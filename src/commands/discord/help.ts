@@ -120,7 +120,7 @@ export default {
 			time: 3_600_000,
 		});
 
-		// @ts-expect-error
+		// @ts-ignore
 		collector.on("collect", async (i) => {
 			const selection = i.values[0];
 			const category = categories.find((p) => p.name === selection);
