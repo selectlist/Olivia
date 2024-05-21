@@ -1,10 +1,12 @@
-[submodule "src/Serendipity"]
-	path = src/Serendipity
-	url = https://github.com/selectlist/Serendipity
-    branch = production
-[submodule "src/nirn-proxy"]
-	path = src/nirn-proxy
-	url = https://github.com/Purrquinox/nirn-proxy
 [submodule "src/gateway-proxy"]
 	path = src/gateway-proxy
 	url = https://github.com/Purrquinox/gateway-proxy
+[submodule "src/nirn-proxy"]
+	path = src/nirn-proxy
+	url = https://github.com/Purrquinox/nirn-proxy
+[submodule "src/Serendipity"]
+	path = src/Serendipity
+	url = https://github.com/selectlist/Serendipity
+        branch = development
+[submodule "Serendipity"]
+	branch = development

@@ -61,11 +61,14 @@ const commands: Map<
 	{
 		data: {
 			meta: SlashCommandBuilder;
+			category: string;
+			accountRequired: boolean;
 			permissionRequired: string | null;
 		};
 		execute: (
 			client: Client,
-			interaction: ChatInputCommandInteraction
+			interaction: ChatInputCommandInteraction,
+			otherData: any
 		) => Promise<void>;
 		autocomplete: (
 			client: Client,
@@ -154,7 +157,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
 							command.data.permissionRequired
 						)
 					)
-						await command?.execute(client, interaction);
+						await command?.execute(client, interaction, {
+							commands: commands,
+						});
 					else
 						await interaction.reply({
 							embeds: [
@@ -177,7 +182,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
 								.setColor("Random"),
 						],
 					});
-			} else await command?.execute(client, interaction);
+			} else
+				await command?.execute(client, interaction, {
+					commands: commands,
+				});
 		} catch (p) {
 			error("Discord", p.toString());
 

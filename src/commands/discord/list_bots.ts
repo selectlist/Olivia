@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { EmbedBuilder } from "discord.js";
+import { ChatInputCommandInteraction, Client, EmbedBuilder } from "discord.js";
 import Pagination from "../../pagination.js";
 import * as database from "../../Serendipity/prisma.js";
 
@@ -14,9 +14,15 @@ export default {
 					.setDescription("Should we include bots from Revolt Chat?")
 					.setRequired(false)
 			),
+		category: "general",
+		accountRequired: false,
 		permissionRequired: null,
 	},
-	async execute(client, interaction) {
+	async execute(
+		client: Client,
+		interaction: ChatInputCommandInteraction,
+		otherData: any
+	) {
 		const revoltOption = interaction.options.getBoolean("revolt");
 
 		const discord = await database.Discord.find({
@@ -32,7 +38,7 @@ export default {
 				.setDescription(p.description)
 				.setThumbnail(
 					p.avatar === "/logo.png"
-						? "https://sparkyflight.xyz/logo.png"
+						? "https://select-list.xyz/logo.png"
 						: p.avatar
 				)
 				.setColor("Random")

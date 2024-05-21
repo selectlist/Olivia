@@ -1,4 +1,9 @@
-import { EmbedBuilder, codeBlock } from "discord.js";
+import {
+	Client,
+	EmbedBuilder,
+	ModalSubmitInteraction,
+	codeBlock,
+} from "discord.js";
 import * as util from "util";
 
 export default {
@@ -6,13 +11,15 @@ export default {
 		name: "eval-private",
 		permissionRequired: "developers.evaluate",
 	},
-	async execute(client, interaction) {
+	async execute(client: Client, interaction: ModalSubmitInteraction) {
 		const code = interaction.fields.getTextInputValue("code");
 		let inline = interaction.fields.getTextInputValue("inline") || "n";
 		let hidden = interaction.fields.getTextInputValue("hidden") || "n";
 		let embed;
 
+		// @ts-expect-error
 		if (inline.toLowerCase() === "y") inline = true;
+		// @ts-expect-error
 		else inline = false;
 
 		const limit = (value) => {
@@ -65,6 +72,7 @@ export default {
 				.setTitle("Evaluation Results")
 				.setColor(0x00ff00)
 				.addFields(
+					// @ts-expect-error
 					{
 						name: "Input:",
 						value: codeBlock("javascript", limit(code)),
@@ -91,7 +99,7 @@ export default {
 					text: `Executed by ${
 						interaction.user.username
 					}, in about ${Math.floor(
-						Date.now() - interaction.createdAt
+						Date.now() - (interaction.createdAt as any)
 					)} milliseconds`,
 				});
 		} catch (err) {
@@ -99,6 +107,7 @@ export default {
 				.setTitle("Evaluation Results")
 				.setColor(0xff0000)
 				.addFields(
+					// @ts-expect-error
 					{
 						name: "Input:",
 						value: codeBlock("javascript", limit(code)),
@@ -120,7 +129,7 @@ export default {
 					text: `Executed by ${
 						interaction.user.username
 					}, in about ${Math.floor(
-						Date.now() - interaction.createdAt
+						Date.now() - (interaction.createdAt as any)
 					)} milliseconds`,
 				});
 		}

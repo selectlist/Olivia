@@ -1,5 +1,7 @@
 import {
 	ActionRowBuilder,
+	ChatInputCommandInteraction,
+	Client,
 	ModalBuilder,
 	TextInputBuilder,
 	TextInputStyle,
@@ -11,9 +13,15 @@ export default {
 		meta: new SlashCommandBuilder()
 			.setName("eval")
 			.setDescription("Evaluate your Code (developers only)"),
+		category: "staff",
+		accountRequired: true,
 		permissionRequired: "developers.evaluate",
 	},
-	async execute(client, interaction) {
+	async execute(
+		client: Client,
+		interaction: ChatInputCommandInteraction,
+		otherData: any
+	) {
 		const modal = new ModalBuilder()
 			.setCustomId("eval-private")
 			.setTitle("Evaluate your Code");

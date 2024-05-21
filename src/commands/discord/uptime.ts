@@ -1,13 +1,20 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
+import { ChatInputCommandInteraction, Client } from "discord.js";
 
 export default {
 	data: {
 		meta: new SlashCommandBuilder()
 			.setName("uptime")
 			.setDescription("How long have i been alive for?"),
+		category: "stats",
+		accountRequired: false,
 		permissionRequired: null,
 	},
-	async execute(client, interaction) {
+	async execute(
+		client: Client,
+		interaction: ChatInputCommandInteraction,
+		otherData: any
+	) {
 		const formatTime = (seconds) => {
 			const days = Math.floor(seconds / 86400);
 			seconds -= days * 86400;

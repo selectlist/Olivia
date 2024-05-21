@@ -9,9 +9,8 @@
 		"tsc": "tsc",
 		"format": "prettier --write .",
 		"test": "jest",
-        
-        "database:generate": "npx prisma generate --schema=./src/Serendipy/schema.prisma",
-		"database:push": "npx prisma db push --schema=./src/Serendipy/schema.prisma",
+		"database:generate": "npx prisma generate --schema=./src/Serendipity/schema.prisma",
+		"database:push": "npx prisma db push --schema=./src/Serendipity/schema.prisma",
 		"database:typegen": "npx @kalissaac/prisma-typegen ./src/Serendipity/types/prismaTypes.ts ./src/Serendipity/schema.prisma"
 	},
 	"type": "module",
