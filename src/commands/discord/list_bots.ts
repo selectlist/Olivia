@@ -14,7 +14,7 @@ export default {
 					.setDescription("Should we include bots from Revolt Chat?")
 					.setRequired(false)
 			),
-		category: "general",
+		category: "Bots",
 		accountRequired: false,
 		permissionRequired: null,
 	},

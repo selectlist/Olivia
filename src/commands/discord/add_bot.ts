@@ -34,8 +34,8 @@ export default {
 		meta: new SlashCommandBuilder()
 			.setName("add-bot")
 			.setDescription("Add your bot to Select List!"),
-		category: "general",
-		accountRequired: true,
+		category: "Bots",
+		accountRequired: false,
 		permissionRequired: null,
 	},
 	async execute(
