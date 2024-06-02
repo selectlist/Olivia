@@ -8,5 +8,3 @@
 	path = src/Serendipity
 	url = https://github.com/selectlist/Serendipity
         branch = development
-[submodule "Serendipity"]
-	branch = development

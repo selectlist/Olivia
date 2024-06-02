@@ -15,13 +15,59 @@ import {
 } from "discord.js";
 import * as database from "../../Serendipity/prisma.js";
 
+// Download file, and upload to Popkat CDN (S3)
+const downloadToPopkat = async (
+	userID: string,
+	platform: string,
+	type: string,
+	uri: string
+): Promise<string | Error> => {
+	// Download file, using Buffer.
+	let file = await fetch(uri);
+	let arrayBuffer = Buffer.from(await file.arrayBuffer());
+
+	// Turn Buffer into Blob
+	let blob = new Blob([arrayBuffer], { type: "application/octet-stream" });
+
+	// Create a new FormData instance
+	const formData = new FormData();
+
+	// Append the Blob to FormData as 'file'
+	formData.append("file", blob);
+
+	// Send request to Popkat CDN with FormData
+	const Request = await fetch(
+		`https://${process.env.PopkatCDNDomain}/upload`,
+		{
+			method: "POST",
+			body: formData,
+			headers: {
+				userID: userID,
+				platform: `selectlist_${type}_${platform}`,
+			},
+		}
+	);
+
+	// Check if request was successful.
+	if (Request.status === 200) {
+		const json: {
+			key: string;
+		} = await Request.json();
+
+		return `https://${process.env.PopkatCDNDomain}/${json.key}`;
+	} else {
+		const text: string = await Request.text();
+		throw new Error(`[Popkat CDN Error] => ${text}`);
+	}
+};
+
 export default {
 	data: {
 		meta: new SlashCommandBuilder()
 			.setName("add-server")
 			.setDescription("Add your Server to Select List!"),
-		category: "general",
-		accountRequired: true,
+		category: "Servers",
+		accountRequired: false,
 		permissionRequired: null,
 	},
 	async execute(
@@ -52,7 +98,7 @@ export default {
 						.setTitle("Error")
 						.setColor("Red")
 						.setDescription(
-							"Sorry, this server already exists in the database. Run `/server unlist` to remove."
+							"Sorry, this server already exists in the database. Run `/remove-server` to remove."
 						),
 				],
 				ephemeral: true,
@@ -166,9 +212,10 @@ export default {
 							const channelList =
 								await interaction.guild.channels.fetch();
 
+							let servericon = interaction.guild.iconURL();
+
 							const name = interaction.guild.name,
 								id = interaction.guild.id,
-								icon = interaction.guild.iconURL(),
 								owner = interaction.guild.ownerId,
 								invite = await interaction.guild.invites.create(
 									interaction.guild.rulesChannel,
@@ -195,7 +242,11 @@ export default {
 										};
 									})
 									.filter((p) => p != undefined),
-								memberCount = interaction.guild.memberCount;
+								memberCount = interaction.guild.memberCount,
+								onlineMembers =
+									interaction.guild.members.cache.filter(
+										(m) => m.presence.status === "online"
+									).size;
 
 							const userData = await database.Users.get({
 								userid: owner,
@@ -215,10 +266,20 @@ export default {
 									staff_perms: [],
 								});
 
+							let popkat = await downloadToPopkat(
+								id,
+								"discord",
+								"servers",
+								`https://cdn.discordapp.com/avatars/${id}/${servericon}.webp`
+							);
+							if (typeof popkat === "string") servericon = popkat;
+							else
+								servericon = `https://cdn.discordapp.com/avatars/${id}/${servericon}.webp`;
+
 							const resp = await database.DiscordServers.create({
 								guildid: id,
 								name: name,
-								icon: icon,
+								icon: servericon,
 								banner: "/guildbanner.png",
 								tags: data["tags"]
 									.split(", ")
@@ -227,6 +288,7 @@ export default {
 								description: data["short_description"],
 								longdescription: data["long_description"],
 								members: memberCount,
+								onlineMembers: onlineMembers,
 								state: "PUBLIC",
 								upvotes: [],
 								downvotes: [],
@@ -259,8 +321,6 @@ export default {
 								});
 							}
 						} catch (err) {
-							console.log(err);
-
 							await i.channel.send({
 								embeds: [
 									new EmbedBuilder()

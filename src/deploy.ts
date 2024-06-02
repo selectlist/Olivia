@@ -4,6 +4,13 @@ import { Routes } from "discord-api-types/v9";
 import fs from "fs";
 import * as dotenv from "dotenv";
 import * as path from "path";
+import {
+	AutocompleteInteraction,
+	ChatInputCommandInteraction,
+	Client,
+	RESTPostAPIChatInputApplicationCommandsJSONBody,
+	SlashCommandBuilder,
+} from "discord.js";
 
 // Configure dotenv
 dotenv.config();
@@ -31,15 +38,32 @@ const getFilesInDirectory = (dir: string) => {
 };
 
 // Slash Commands
-let commands: any = [];
-const commandFiles = getFilesInDirectory("./dist/commands/discord").filter(
-	(file) => file.endsWith(".js")
-);
+let commands: RESTPostAPIChatInputApplicationCommandsJSONBody[] = [];
+const commandFiles: string[] = getFilesInDirectory(
+	"./dist/commands/discord"
+).filter((file) => file.endsWith(".js"));
 
 for (const file of commandFiles) {
 	import(`../${file}`)
 		.then((module) => {
-			const i: any = module.default;
+			const i: {
+				data: {
+					meta: SlashCommandBuilder;
+					category: string;
+					accountRequired: boolean;
+					permissionRequired: string | null;
+				};
+				execute: (
+					client: Client,
+					interaction: ChatInputCommandInteraction,
+					otherData: any
+				) => Promise<void>;
+				autocomplete: (
+					client: Client,
+					interaction: AutocompleteInteraction
+				) => Promise<void>;
+			} = module.default;
+
 			commands.push(i.data.meta.toJSON());
 		})
 		.catch((error) => {

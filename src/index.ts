@@ -14,6 +14,9 @@ import {
 	codeBlock,
 	ModalSubmitInteraction,
 	AutocompleteInteraction,
+	Guild,
+	Presence,
+	GuildMember,
 } from "discord.js";
 import { debug, info, error } from "./logger.js";
 import "./revolt.js";
@@ -39,7 +42,7 @@ const client: Client = new Client({
 });
 
 // Get files from directory
-const getFilesInDirectory = (dir: string) => {
+const getFilesInDirectory = (dir: string): string[] => {
 	let files: string[] = [];
 	const filesInDir = fs.readdirSync(dir);
 
@@ -76,9 +79,9 @@ const commands: Map<
 		) => Promise<void>;
 	}
 > = new Map();
-const commandFiles = getFilesInDirectory("./dist/commands/discord").filter(
-	(file) => file.endsWith(".js")
-);
+const commandFiles: string[] = getFilesInDirectory(
+	"./dist/commands/discord"
+).filter((file) => file.endsWith(".js"));
 
 for (const file of commandFiles) {
 	import(`../${file}`)
@@ -105,8 +108,8 @@ const modals: Map<
 		) => Promise<void>;
 	}
 > = new Map();
-const modalFiles = getFilesInDirectory("./dist/modals").filter((file) =>
-	file.endsWith(".js")
+const modalFiles: string[] = getFilesInDirectory("./dist/modals").filter(
+	(file) => file.endsWith(".js")
 );
 
 for (const file of modalFiles) {
@@ -278,6 +281,332 @@ client.on(Events.InteractionCreate, async (interaction) => {
 			error("Discord", p.toString());
 			return;
 		}
+	}
+});
+
+// Download file, and upload to Popkat CDN (S3)
+const downloadToPopkat = async (
+	userID: string,
+	platform: string,
+	type: string,
+	uri: string
+): Promise<string | Error> => {
+	// Download file, using Buffer.
+	let file = await fetch(uri);
+	let arrayBuffer = Buffer.from(await file.arrayBuffer());
+
+	// Turn Buffer into Blob
+	let blob = new Blob([arrayBuffer], {
+		type: "application/octet-stream",
+	});
+
+	// Create a new FormData instance
+	const formData = new FormData();
+
+	// Append the Blob to FormData as 'file'
+	formData.append("file", blob);
+
+	// Send request to Popkat CDN with FormData
+	const Request = await fetch(
+		`https://${process.env.PopkatCDNDomain}/upload`,
+		{
+			method: "POST",
+			body: formData,
+			headers: {
+				userID: userID,
+				platform: `selectlist_${type}_${platform}`,
+			},
+		}
+	);
+
+	// Check if request was successful.
+	if (Request.status === 200) {
+		const json: {
+			key: string;
+		} = await Request.json();
+
+		return `https://${process.env.PopkatCDNDomain}/${json.key}`;
+	} else {
+		const text: string = await Request.text();
+		throw new Error(`[Popkat CDN Error] => ${text}`);
+	}
+};
+
+// Delete file from Popkat CDN (S3)
+const deleteFromPopkat = async (
+	userID: string,
+	platform: string,
+	type: string,
+	key: string
+): Promise<boolean | Error> => {
+	key = key.replace(`https://${process.env.PopkatCDNDomain}/`, ""); // god is dead, and we have killed him.
+
+	// Send request to Popkat CDN with FormData
+	const Request = await fetch(
+		`http://localhost:${process.env.PopkatCDNAdminPort}/delete`,
+		{
+			method: "DELETE",
+			headers: {
+				userID: userID,
+				platform: `selectlist_${type}_${platform}`,
+				key: key,
+			},
+		}
+	);
+
+	// Check if request was successful.
+	if (Request.status === 200) return true;
+	else {
+		const text: string = await Request.text();
+		console.log(text);
+	}
+};
+
+// Unhide server, in event that bot rejoins server
+client.on(Events.GuildCreate, async (guild: Guild) => {
+	let server = await database.DiscordServers.get({
+		guildid: guild.id,
+	});
+
+	if (server) {
+		let servericon = guild.iconURL();
+
+		let popkat = await downloadToPopkat(
+			guild.id,
+			"discord",
+			"servers",
+			`https://cdn.discordapp.com/avatars/${guild.id}/${servericon}.webp`
+		);
+		if (typeof popkat === "string") servericon = popkat;
+		else
+			servericon = `https://cdn.discordapp.com/avatars/${guild.id}/${servericon}.webp`;
+
+		server.icon = servericon;
+		server.invite = (
+			await guild.invites.create(guild.rulesChannel, {
+				temporary: false,
+			})
+		).url;
+		server.members = guild.memberCount;
+		server.onlineMembers = guild.members.cache.filter(
+			(m) => m.presence.status === "online"
+		).size;
+		server.state = "PUBLIC";
+
+		await database.Prisma.discord_channels.createMany({
+			data: guild.channels.cache
+				.map((p) => {
+					if (p.type === 4) return;
+
+					let type: string;
+					if (p.type === 0) type = "text";
+					if (p.type === 2) type = "voice";
+					if (p.type === 5) type = "announcements";
+					if (p.type === 15) type = "thread";
+
+					return {
+						guildid: guild.id,
+						name: p.name,
+						category: p.parent.name,
+						type: type,
+					};
+				})
+				.filter((p) => p != undefined),
+		});
+		await database.DiscordServers.update(guild.id, server);
+	}
+});
+
+// Hide server, in event that the bot leaves server
+client.on(Events.GuildDelete, async (guild: Guild) => {
+	let server = await database.DiscordServers.get({
+		guildid: guild.id,
+	});
+
+	if (server) {
+		if (server.icon.startsWith(`https://${process.env.PopkatCDNDomain}/`))
+			await deleteFromPopkat(guild.id, "discord", "servers", server.icon);
+
+		server.icon = "/";
+		server.members = 0;
+		server.onlineMembers = 0;
+		server.state = "HIDDEN";
+
+		await database.Prisma.discord_channels.deleteMany({
+			where: {
+				guildid: guild.id,
+			},
+		});
+		await database.DiscordServers.update(guild.id, server);
+	}
+});
+
+// Automatically update server info
+client.on(Events.GuildUpdate, async (oldGuild: Guild, newGuild: Guild) => {
+	// Retrieve the existing server data
+	let server = await database.DiscordServers.get({
+		guildid: newGuild.id,
+	});
+
+	// Check if the server exists
+	if (server) {
+		const channelList = newGuild.channels.cache; // Fetch list of channels from cache
+		let servericon = newGuild.iconURL(); // Server Icon URI
+
+		const name = newGuild.name,
+			id = newGuild.id,
+			owner = newGuild.ownerId,
+			channels = channelList
+				.map((p) => {
+					if (p.type === 4) return;
+
+					let type: string;
+					if (p.type === 0) type = "text";
+					if (p.type === 2) type = "voice";
+					if (p.type === 5) type = "announcements";
+					if (p.type === 15) type = "thread";
+
+					return {
+						guildid: id,
+						name: p.name,
+						category: p.parent.name,
+						type: type,
+					};
+				})
+				.filter((p) => p != undefined),
+			memberCount = newGuild.memberCount,
+			onlineMembers = newGuild.members.cache.filter(
+				(m) => m.presence.status === "online"
+			).size;
+
+		const ownerData = newGuild.members.cache.get(owner); // Fetch guild owner
+
+		const userData = await database.Users.get({
+			userid: owner,
+		}); // Fetch guild owner data within SL DB
+
+		if (!userData)
+			await database.Users.create({
+				username: ownerData.user.username,
+				userid: owner,
+				revoltid: null,
+				bio: "None",
+				avatar: ownerData.displayAvatarURL(),
+				banner: "/banner.png",
+				badges: [],
+				staff_perms: [],
+			});
+
+		// Delete icon from Popkat
+		if (server.icon.startsWith(`https://${process.env.PopkatCDNDomain}/`))
+			await deleteFromPopkat(
+				newGuild.id,
+				"discord",
+				"servers",
+				server.icon
+			);
+
+		// Upload icon to Popkat
+		let popkat = await downloadToPopkat(
+			newGuild.id,
+			"discord",
+			"servers",
+			`https://cdn.discordapp.com/avatars/${newGuild.id}/${servericon}.webp`
+		);
+		if (typeof popkat === "string") servericon = popkat;
+		else
+			servericon = `https://cdn.discordapp.com/avatars/${newGuild.id}/${servericon}.webp`;
+
+		// Nuke all channels
+		await database.Prisma.discord_channels.deleteMany({
+			where: {
+				guildid: newGuild.id,
+			},
+		});
+
+		// Add all channels back
+		await database.Prisma.discord_channels.createMany({
+			data: channels,
+		});
+
+		// Update fields within server variable
+		server.name = name;
+		server.ownerid = id;
+		server.members = memberCount;
+		server.onlineMembers = onlineMembers;
+		server.icon = servericon;
+
+		// Perform the update
+		await database.DiscordServers.update(id, server);
+	}
+});
+
+client.on(
+	Events.PresenceUpdate,
+	async (oldPresence: Presence, newPresence: Presence) => {
+		// Retrieve the existing server data
+		let server = await database.DiscordServers.get({
+			guildid: newPresence.guild.id,
+		});
+
+		// Check if the server exists
+		if (server) {
+			const memberCount = newPresence.guild.memberCount,
+				onlineMembers = newPresence.guild.members.cache.filter(
+					(m) => m.presence.status === "online"
+				).size;
+
+			// Set new fields within server variable
+			server.members = memberCount;
+			server.onlineMembers = onlineMembers;
+
+			// Perform the update
+			await database.DiscordServers.update(newPresence.guild.id, server);
+		}
+	}
+);
+
+client.on(Events.GuildMemberAdd, async (member: GuildMember) => {
+	// Retrieve the existing server data
+	let server = await database.DiscordServers.get({
+		guildid: member.guild.id,
+	});
+
+	// Check if the server exists
+	if (server) {
+		const memberCount = member.guild.memberCount,
+			onlineMembers = member.guild.members.cache.filter(
+				(m) => m.presence.status === "online"
+			).size;
+
+		// Set new fields within server variable
+		server.members = memberCount;
+		server.onlineMembers = onlineMembers;
+
+		// Perform the update
+		await database.DiscordServers.update(member.guild.id, server);
+	}
+});
+
+client.on(Events.GuildMemberRemove, async (member: GuildMember) => {
+	// Retrieve the existing server data
+	let server = await database.DiscordServers.get({
+		guildid: member.guild.id,
+	});
+
+	// Check if the server exists
+	if (server) {
+		const memberCount = member.guild.memberCount,
+			onlineMembers = member.guild.members.cache.filter(
+				(m) => m.presence.status === "online"
+			).size;
+
+		// Set new fields within server variable
+		server.members = memberCount;
+		server.onlineMembers = onlineMembers;
+
+		// Perform the update
+		await database.DiscordServers.update(member.guild.id, server);
 	}
 });
 

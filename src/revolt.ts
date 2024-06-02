@@ -9,7 +9,7 @@ import "dotenv/config";
 const client: Client = new Client();
 
 // Get files from directory
-const getFilesInDirectory = (dir: string) => {
+const getFilesInDirectory = (dir: string): string[] => {
 	let files: string[] = [];
 	const filesInDir = fs.readdirSync(dir);
 
@@ -52,7 +52,19 @@ const commands: Map<
 		) => Promise<void>;
 	}
 > = new Map();
-const commandsData = [];
+
+const commandsData: {
+	name: string;
+	description: string;
+	category: string;
+	arguments: {
+		name: string;
+		description: string;
+		exampleValue: string;
+		required: boolean;
+	}[];
+	permissionRequired: string | null;
+}[] = [];
 const commandFiles = getFilesInDirectory("./dist/commands/revolt").filter(
 	(file) => file.endsWith(".js")
 );
