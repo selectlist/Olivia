@@ -479,7 +479,7 @@ client.on(Events.GuildUpdate, async (oldGuild: Guild, newGuild: Guild) => {
 				(m) => m.presence.status === "online"
 			).size;
 
-		const ownerData = await newGuild.fetchOwner(); // Fetch guild owner
+		const ownerData = newGuild.members.cache.get(owner); // Fetch guild owner
 
 		const userData = await database.Users.get({
 			userid: owner,
