@@ -388,9 +388,9 @@ client.on(Events.GuildCreate, async (guild: Guild) => {
 			})
 		).url;
 		server.members = guild.memberCount;
-		server.onlineMembers = guild.members.cache.filter(
-			(m) => m.presence.status === "online"
-		).size;
+		server.onlineMembers = (
+			await guild.members.fetch({ withPresences: true })
+		).filter((m) => m.presence?.status === "online").size;
 		server.state = "PUBLIC";
 
 		await database.Prisma.discord_channels.createMany({
@@ -475,9 +475,9 @@ client.on(Events.GuildUpdate, async (oldGuild: Guild, newGuild: Guild) => {
 				})
 				.filter((p) => p != undefined),
 			memberCount = newGuild.memberCount,
-			onlineMembers = newGuild.members.cache.filter(
-				(m) => m.presence.status === "online"
-			).size;
+			onlineMembers = (
+				await newGuild.members.fetch({ withPresences: true })
+			).filter((m) => m.presence?.status === "online").size;
 
 		const ownerData = newGuild.members.cache.get(owner); // Fetch guild owner
 
@@ -552,9 +552,11 @@ client.on(
 		// Check if the server exists
 		if (server) {
 			const memberCount = newPresence.guild.memberCount,
-				onlineMembers = newPresence.guild.members.cache.filter(
-					(m) => m.presence.status === "online"
-				).size;
+				onlineMembers = (
+					await newPresence.guild.members.fetch({
+						withPresences: true,
+					})
+				).filter((m) => m.presence?.status === "online").size;
 
 			// Set new fields within server variable
 			server.members = memberCount;
@@ -575,9 +577,9 @@ client.on(Events.GuildMemberAdd, async (member: GuildMember) => {
 	// Check if the server exists
 	if (server) {
 		const memberCount = member.guild.memberCount,
-			onlineMembers = member.guild.members.cache.filter(
-				(m) => m.presence.status === "online"
-			).size;
+			onlineMembers = (
+				await member.guild.members.fetch({ withPresences: true })
+			).filter((m) => m.presence?.status === "online").size;
 
 		// Set new fields within server variable
 		server.members = memberCount;
@@ -597,9 +599,9 @@ client.on(Events.GuildMemberRemove, async (member: GuildMember) => {
 	// Check if the server exists
 	if (server) {
 		const memberCount = member.guild.memberCount,
-			onlineMembers = member.guild.members.cache.filter(
-				(m) => m.presence.status === "online"
-			).size;
+			onlineMembers = (
+				await member.guild.members.fetch({ withPresences: true })
+			).filter((m) => m.presence?.status === "online").size;
 
 		// Set new fields within server variable
 		server.members = memberCount;
