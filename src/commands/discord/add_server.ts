@@ -243,10 +243,13 @@ export default {
 									})
 									.filter((p) => p != undefined),
 								memberCount = interaction.guild.memberCount,
-								onlineMembers =
-									interaction.guild.members.cache.filter(
-										(m) => m.presence.status === "online"
-									).size;
+								onlineMembers = (
+									await interaction.guild.members.fetch({
+										withPresences: true,
+									})
+								).filter(
+									(m) => m.presence?.status === "online"
+								).size;
 
 							const userData = await database.Users.get({
 								userid: owner,
