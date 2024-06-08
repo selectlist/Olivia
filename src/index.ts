@@ -291,7 +291,7 @@ const downloadToPopkat = async (
 	type: string,
 	uri: string
 ): Promise<string | Error> => {
-	/* Download file, using Buffer.
+	// Download file, using Buffer.
 	let file = await fetch(uri);
 	let arrayBuffer = Buffer.from(await file.arrayBuffer());
 
@@ -329,8 +329,7 @@ const downloadToPopkat = async (
 	} else {
 		const text: string = await Request.text();
 		throw new Error(`[Popkat CDN Error] => ${text}`);
-	}*/
-	return uri;
+	}
 };
 
 // Delete file from Popkat CDN (S3)
@@ -376,11 +375,11 @@ client.on(Events.GuildCreate, async (guild: Guild) => {
 			guild.id,
 			"discord",
 			"servers",
-			`https://cdn.discordapp.com/avatars/${guild.id}/${servericon}.webp`
+			servericon
 		);
 		if (typeof popkat === "string") servericon = popkat;
 		else
-			servericon = `https://cdn.discordapp.com/avatars/${guild.id}/${servericon}.webp`;
+			servericon = servericon;
 
 		server.icon = servericon;
 		server.invite = (
@@ -512,11 +511,11 @@ client.on(Events.GuildUpdate, async (oldGuild: Guild, newGuild: Guild) => {
 			newGuild.id,
 			"discord",
 			"servers",
-			`https://cdn.discordapp.com/avatars/${newGuild.id}/${servericon}.webp`
+			servericon
 		);
 		if (typeof popkat === "string") servericon = popkat;
 		else
-			servericon = `https://cdn.discordapp.com/avatars/${newGuild.id}/${servericon}.webp`;
+			servericon = servericon;
 
 		// Nuke all channels
 		await database.Prisma.discord_channels.deleteMany({
