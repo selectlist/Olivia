@@ -22,7 +22,7 @@ const downloadToPopkat = async (
 	type: string,
 	uri: string
 ): Promise<string | Error> => {
-	/* Download file, using Buffer.
+	// Download file, using Buffer.
 	let file = await fetch(uri);
 	let arrayBuffer = Buffer.from(await file.arrayBuffer());
 
@@ -58,8 +58,7 @@ const downloadToPopkat = async (
 	} else {
 		const text: string = await Request.text();
 		throw new Error(`[Popkat CDN Error] => ${text}`);
-	}*/
-	return uri;
+	}
 };
 
 export default {
@@ -274,11 +273,11 @@ export default {
 								id,
 								"discord",
 								"servers",
-								`https://cdn.discordapp.com/avatars/${id}/${servericon}.webp`
+								servericon
 							);
 							if (typeof popkat === "string") servericon = popkat;
 							else
-								servericon = `https://cdn.discordapp.com/avatars/${id}/${servericon}.webp`;
+								servericon = servericon;
 
 							const resp = await database.DiscordServers.create({
 								guildid: id,
